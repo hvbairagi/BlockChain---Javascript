@@ -42,7 +42,9 @@ class Block {
 class Blockchain {
   constructor() {
     this.chain = [this.createGenesisBlock()];
-    this.difficulty = 4;
+    this.difficulty = 2;
+    this.pendingTransactions = [];
+    this.miningReward = 100;
   }
 
   createGenesisBlock() {
@@ -53,11 +55,38 @@ class Blockchain {
     return this.chain[this.chain.length - 1];
   }
 
-  addBlock(newBlock) {
-    newBlock.previousHash = this.getLatestBlock().hash;
-    // newBlock.hash = newBlock.calculateHash();
-    newBlock.mineBlock(this.difficulty);
-    this.chain.push(newBlock);
+  minePendingTransactions(miningRewardAddress) {
+    let block = new Block(Date.now(), this.pendingTransactions);
+    block.mineBlock(this.difficulty);
+
+    console.log("Block successfully mined!");
+    this.chain.push(block);
+
+    this.pendingTransactions = [
+      new Transaction(null, miningRewardAddress, this.miningReward),
+    ];
+  }
+
+  createTransaction(transaction) {
+    this.pendingTransactions.push(transaction);
+  }
+
+  getBalanceOfAddress(address) {
+    let balance = 0;
+
+    for (const block of this.chain) {
+      for (const trans of block.transactions) {
+        if (trans.fromAddress === address) {
+          balance -= trans.amount;
+        }
+
+        if (trans.toAddress === address) {
+          balance += trans.amount;
+        }
+      }
+    }
+
+    return balance;
   }
 
   isChainValid() {
@@ -79,3 +108,23 @@ class Blockchain {
 }
 
 let harshCoin = new Blockchain();
+harshCoin.createTransaction(new Transaction("address1", "address2", 100));
+harshCoin.createTransaction(new Transaction("address2", "address1", 50));
+
+console.log("\n Starting the miner...");
+harshCoin.minePendingTransactions("harsh-address");
+
+console.log();
+
+console.log(
+  "\nBalance of harsh is: ",
+  harshCoin.getBalanceOfAddress("harsh-address")
+);
+
+console.log("\n Starting the miner again...");
+harshCoin.minePendingTransactions("harsh-address");
+
+console.log(
+  "\nBalance of harsh is: ",
+  harshCoin.getBalanceOfAddress("harsh-address")
+);
